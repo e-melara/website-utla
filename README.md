@@ -1,3 +1,4 @@
 # Repositorio de web utla
 
--   [] inicar con la parte de asesoria en linea
+-   [x] inicar con la parte de asesoria en linea
+-   [] materias con unidades valorativas
