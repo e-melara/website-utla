@@ -14,4 +14,4 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', "HomeController@index");
-Route::resource('/login', 'LoginController');
+// Route::resource('/login', 'LoginController');

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\API;
 
+use App\JWTToken;
+use Firebase\JWT\JWT;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
@@ -11,35 +13,35 @@ use App\Alumno;
 
 class AsesoriaController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index()
-    {
-        //
+    private $jwtToken;
+    
+    public function __construct(Type $var = null) {
+        $this->jwtToken = new JWTToken();
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
+    public function getHorarioSubject(Request $request)
     {
-        //
+        $array = array();
+        $subject = $request->input('subject');
+
+        $schulesSubjects = DB::table('cargaacademica')
+            ->where('ciclolectivo', '02-2021')
+            ->where('codmate', $subject)
+            ->where('tipoinscri', '1')
+            ->select('turno', 'hora', 'dias', 'codcarga')
+            ->get();
+
+        $array['schules'] = $schulesSubjects;
+        return response()->json($array);
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
+    public function asesoria(Request $request)
     {
+
+        $token = $request['token'];
+        $data = $this->jwtToken->data($token);
+        $id = $data->usuario->id;
+
         $item = Alumno::where('carnet', $id)
             ->select('carnet', 'apellidos', 'nombres', 'idcarrera as carrera')
             ->first();
@@ -68,7 +70,11 @@ class AsesoriaController extends Controller
             ->get();
 
         $resolve = self::resolveSubjetcs($materiasAprobadas, $materiasPendientes);
-        self::resolveSubjetAsignada($resolve);
+        $subjects = self::resolveSubjetAsignada($resolve);
+
+        return response()->json([
+            "materias" => $subjects
+        ]);
     }
 
     private function resolveSubjetcs($ganadas, $pendientes)
@@ -110,9 +116,9 @@ class AsesoriaController extends Controller
                     return $item;
                 }
             }
-        });      
-        
-        dd($resolve);
+        });
+
+        return $resolve;
     }
 
     private function verificarEquivalencias($prerequisto, $materias = array() )
@@ -131,28 +137,5 @@ class AsesoriaController extends Controller
         return json_decode(
             json_encode($array), true
         );
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
     }
 }

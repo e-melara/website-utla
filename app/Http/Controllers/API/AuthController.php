@@ -1,7 +1,5 @@
 <?php
-
 namespace App\Http\Controllers\API;
-
 
 use App\User;
 use App\JWTToken;
@@ -9,6 +7,7 @@ use Firebase\JWT\JWT;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -46,25 +45,25 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $token = $this->jwtToken->signIn([
-            "usuario" => array(
-                "nombres"   => $user->nomuser,
-                "apellidos" => $user->apeuser
-            )
-        ]);
-        
-        return response()->json([
-            "token"     => $token,
-            "usuario"   => [
-                "nombres"   => $user->nomuser,
-                "apellidos" => $user->apeuser
-            ]
-        ]);
+        $array = array();
+        $array['usuario']  = [
+            "id"        => $user->iduser,
+            "nombres"   => $user->nomuser,
+            "apellidos" => $user->apeuser,
+            "nivel"     => $user->nivel,
+        ];
+
+        if($user->nivel === '3') {
+            $array['carrera'] = DB::table('alumnos')
+                ->join('carreras', 'alumnos.idcarrera', '=', 'carreras.idcarrera')
+                ->where('alumnos.carnet', $user->iduser)
+                ->select('carreras.idcarrera', 'carreras.nomcarrera')
+                ->first();
+        }
+
+        $array['token'] = $this->jwtToken->signIn($array);
+        return response()->json($array);
     }
-
-    public function logout() {}
-
-    public function refresh(){}
 
     public function me(Request $request)
     {
