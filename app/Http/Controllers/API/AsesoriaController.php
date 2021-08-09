@@ -72,9 +72,26 @@ class AsesoriaController extends Controller
         $resolve = self::resolveSubjetcs($materiasAprobadas, $materiasPendientes);
         $subjects = self::resolveSubjetAsignada($resolve);
 
+        $subjects = self::subjectSchules($subjects);
         return response()->json([
             "materias" => $subjects
         ]);
+    }
+
+    public function subjectSchules($subjects = array())
+    {
+        foreach ($subjects as $key => $value) {
+            $schulesSubjects = DB::table('cargaacademica')
+                ->where('ciclolectivo', '02-2021')
+                ->where('codmate', $value['materia'])
+                ->where('tipoinscri', '1')
+                ->select('turno', 'hora', 'dias', 'codcarga')
+            ->get();
+
+            $subjects[$key]['schules'] = $schulesSubjects;
+        }
+
+        return $subjects;
     }
 
     private function resolveSubjetcs($ganadas, $pendientes)

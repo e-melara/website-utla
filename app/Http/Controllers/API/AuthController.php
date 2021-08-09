@@ -30,7 +30,7 @@ class AuthController extends Controller
             return response()->json([
                 "validator"   => true,
                 "errors"    => $validator->messages()
-            ], 401);
+            ], 403);
         }
 
         $password_hash =  base64_encode(hash("sha224", $request->password));
@@ -42,7 +42,7 @@ class AuthController extends Controller
         if(!$user) {
             return response()->json([
                 "message"   => "El usuario o contraseña no es correcta"
-            ], 401);
+            ], 403);
         }
 
         $array = array();
