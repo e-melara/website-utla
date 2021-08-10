@@ -59,10 +59,66 @@ class AuthController extends Controller
                 ->where('alumnos.carnet', $user->iduser)
                 ->select('carreras.idcarrera', 'carreras.nomcarrera')
                 ->first();
+            $array['rol'] = $this->getRoleUser(true);
+        }else {
+            $result = $this->getRoleUser(false, $user->iduser);
+            if(!$result['result']) {
+                return response()->json([
+                    "message"   => "El usuario no ha sido encontrado"
+                ], 403);
+            }
+            $array['rol'] = $result;
         }
 
         $array['token'] = $this->jwtToken->signIn($array);
         return response()->json($array);
+    }
+
+    public function getRoleUser($isStudent = false, $idUser = null)
+    {
+        if($isStudent) {
+            $DBPerfilStudent = DB::table('perfils')
+                ->where('is_student', 1)
+                ->select('nombre', 'id')
+                ->first();
+
+            $DBModulesStudent = $this->getModulesPerfil($DBPerfilStudent->id);
+
+            return array(
+                "perfil" => $DBPerfilStudent->nombre,
+                "routes" => $DBModulesStudent,
+                "rol"    => 'IS_STUDENT'
+            );
+        }else{
+            $DBPerfilRolAdmin= DB::table('usuario_perfils as up')
+                ->join('perfils as p', 'p.id', '=', 'up.perfil_id')
+                ->where('up.usuario_id', $idUser)
+                ->select('p.nombre', 'p.id')
+                ->first();
+
+            if($DBPerfilRolAdmin) {
+                $DBModulesAdminRole = $this->getModulesPerfil($DBPerfilRolAdmin->id);
+                return array(
+                    "result"    => true,
+                    "perfil"    => $DBPerfilRolAdmin->nombre,
+                    "routes"    => $DBModulesAdminRole,
+                    "rol"    => 'IS_ADMIN'
+                );
+            }
+
+            return array(
+                "result"    => false,
+            );
+        }
+    }
+
+    private function getModulesPerfil($idPerfil)
+    {
+        return Db::table('perfil_modulos as pm')
+            ->join('modulos as m', 'm.id', '=', 'pm.modulo_id')
+            ->where('perfil_id', $idPerfil)
+            ->select('m.*', 'pm.add', 'pm.view', 'pm.delete', 'pm.update')
+            ->get();
     }
 
     public function me(Request $request)
