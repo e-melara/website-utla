@@ -16,10 +16,10 @@ class CreateStudentEnrolledSubjectsTable extends Migration
         Schema::create('student_enrolled_subjects', function (Blueprint $table) {
             $table->id();
             $table->integer('codcarga');
-            $table->unsignedBigInteger('student_enrolleds_id');
+            $table->unsignedBigInteger('student_enrolled_id');
             $table->enum('estado', ['A', 'D']);
             
-            $table->foreign('student_enrolleds_id')->references('id')->on('student_enrolleds');
+            $table->foreign('student_enrolled_id')->references('id')->on('student_enrolleds');
         });
     }
 

@@ -13,6 +13,9 @@ Route::prefix('auth')->group(function() {
 Route::middleware('token')->group(function() {
   Route::prefix('asesoria')->group(function() {
     Route::get('/me', 'API\AsesoriaController@asesoria');
+    Route::get('/pensum', 'API\AsesoriaController@pensum');
     Route::post('/horario', 'API\AsesoriaController@getHorarioSubject');
+    Route::get('/enrolled', 'API\AsesoriaController@getEnrolledSubject');
+    Route::post('/registro', 'API\AsesoriaController@saveRegistroSubject');
   });
 });

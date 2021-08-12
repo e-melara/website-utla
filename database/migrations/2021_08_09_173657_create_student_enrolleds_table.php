@@ -15,7 +15,7 @@ class CreateStudentEnrolledsTable extends Migration
     {
         Schema::create('student_enrolleds', function (Blueprint $table) {
             $table->id();
-            $table->string('ciclo', 5);
+            $table->string('ciclo', 10);
             $table->string('carnet', 15);
             $table->mediumText('observacion');
             $table->enum('estado', ['A', 'V', 'F', 'I']);

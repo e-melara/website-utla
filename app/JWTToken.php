@@ -20,6 +20,16 @@
       return JWT::encode($token, $this->SECRET);
     }
 
+    public function getId($token)
+    {
+      return $this->data($token)->usuario->id;
+    }
+
+    public function getCarrera($token)
+    {
+      return $this->data($token)->carrera->idcarrera;
+    }
+
     public function check($token)
     {
       if(empty($token)) {
