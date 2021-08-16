@@ -18,4 +18,8 @@ Route::middleware('token')->group(function() {
     Route::get('/enrolled', 'API\AsesoriaController@getEnrolledSubject');
     Route::post('/registro', 'API\AsesoriaController@saveRegistroSubject');
   });
+
+  Route::prefix('notes')->group(function() {
+    Route::get('/me', 'API\NotesController@me');
+  });
 });

@@ -170,7 +170,8 @@ class AsesoriaController extends Controller
             "enrolleds" => $enrolleds,
             "pensum"    => $subjectsPensum,
             "take"      => $subjectsToTake,
-            "approved"  => $subjects['approved']
+            "approved"  => $subjects['approved'],
+            "reprobadas" => $subjects['reprobadas']
         ], 200);
 
     }
@@ -218,6 +219,15 @@ class AsesoriaController extends Controller
             ->select("m.ciclopens", "m.nopensum", "m.nommate", "m.codmate as materia")
             ->get();
 
+        $materiasReprobadas = DB::table('cnotas as cn')
+            ->join('materiaspensum as m', 'cn.codmate', '=', 'm.codmate')
+            ->where('cn.carnet', $id)
+            ->where('cn.estado', 'REPROBADO')
+            ->where('m.codcarre', $carrera)
+            ->orderBy('m.ciclopens')
+            ->select("m.ciclopens", "m.nopensum", "m.nommate", "m.codmate as materia")
+            ->get();
+
         $materiasPendientes = DB::table("materiaspensum as pensum")
             ->where('codcarre', $carrera)
             ->whereIn("codmate", function($query) use ($ciclo) {
@@ -237,7 +247,8 @@ class AsesoriaController extends Controller
 
         return array(
             "take"      => $takeSubjects,
-            "approved"  => $materiasAprobadas
+            "approved"  => $materiasAprobadas,
+            'reprobadas'=> $materiasReprobadas
         );
     }
 
