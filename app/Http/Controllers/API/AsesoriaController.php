@@ -22,6 +22,30 @@ class AsesoriaController extends Controller
         $this->jwtToken = new JWTToken();
     }
 
+    // ================== Para las Solicitudes ===============
+    // =======================================================    
+    public function tutoriadaAndSuficiencia(Request $request)
+    {
+        $data = $this->jwtToken->data($request->input('token'));
+
+        $subjectsApprovate = DB::table("cnotas as cn")
+            ->where('cn.carnet', $data->usuario->id)
+            ->where('cn.estado', 'APROBADO')
+            ->select('cn.codmate')
+        ->get();
+
+        $subjectsPensum = DB::table('materiaspensum as mp')
+            ->where('codcarre', $data->carrera->idcarrera)
+            ->where('plan', 'D')
+            ->select("mp.ciclopens", "mp.nopensum", "mp.nommate", "mp.codmate", "mp.codcarre")
+        ->get();
+
+        $enrolled = StudentEnrolled::where('carnet', $data->usuario->id)
+
+
+    }
+    // =======================================================
+
     public function getEnrolledSubject(Request $request)
     {
         $ciclo = '02-2021';
@@ -173,7 +197,6 @@ class AsesoriaController extends Controller
             "approved"  => $subjects['approved'],
             "reprobadas" => $subjects['reprobadas']
         ], 200);
-
     }
 
     public function asesoria(Request $request)

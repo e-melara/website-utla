@@ -17,6 +17,9 @@ Route::middleware('token')->group(function() {
     Route::post('/horario', 'API\AsesoriaController@getHorarioSubject');
     Route::get('/enrolled', 'API\AsesoriaController@getEnrolledSubject');
     Route::post('/registro', 'API\AsesoriaController@saveRegistroSubject');
+    
+    // para las solicitudes
+    Route::get('/sexta', 'API\AsesoriaController@tutoriadaAndSuficiencia');
   });
 
   Route::prefix('notes')->group(function() {
