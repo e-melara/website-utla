@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Alumno;
 use App\JWTToken;
+
+use App\Solicitud;
 use App\StudentEnrolled;
 use App\StudentEnrolledSubjects;
 
@@ -11,7 +14,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 
-use App\Alumno;
 
 
 class AsesoriaController extends Controller
@@ -21,31 +23,6 @@ class AsesoriaController extends Controller
     public function __construct(Type $var = null) {
         $this->jwtToken = new JWTToken();
     }
-
-    // ================== Para las Solicitudes ===============
-    // =======================================================    
-    public function tutoriadaAndSuficiencia(Request $request)
-    {
-        $data = $this->jwtToken->data($request->input('token'));
-
-        $subjectsApprovate = DB::table("cnotas as cn")
-            ->where('cn.carnet', $data->usuario->id)
-            ->where('cn.estado', 'APROBADO')
-            ->select('cn.codmate')
-        ->get();
-
-        $subjectsPensum = DB::table('materiaspensum as mp')
-            ->where('codcarre', $data->carrera->idcarrera)
-            ->where('plan', 'D')
-            ->select("mp.ciclopens", "mp.nopensum", "mp.nommate", "mp.codmate", "mp.codcarre")
-        ->get();
-
-        $enrolled = StudentEnrolled::where('carnet', $data->usuario->id)
-
-
-    }
-    // =======================================================
-
     public function getEnrolledSubject(Request $request)
     {
         $ciclo = '02-2021';
@@ -158,15 +135,37 @@ class AsesoriaController extends Controller
         return response()->json($array);
     }
 
+    private function solicitudes($carnet = '', $carrera = '01', $ciclo = '02-2021', $equal = '=')
+    {
+         $dbResult = DB::table('solicitudes AS sl')
+            ->join('materiaspensum AS m', 'sl.codmate', '=', 'm.codmate')
+            ->where('sl.carnet', '=', $carnet)
+            ->where('m.codcarre', '=', $carrera)
+            ->select("sl.id","sl.carnet", "sl.type", "sl.observacion", "sl.estado", "sl.created_at", "m.nommate", 'm.codmate')
+            ->where('type', $equal, 'SEXTA')
+            ->get();
+
+        if(strcmp($equal, '=') === 0) {
+            foreach ($dbResult as $value) {
+                $value->carga = DB::table("solicitudes_cargas_academicas as sca")
+                    ->join('cargaacademica as c', "c.codcarga", "=", "sca.codcarga")
+                    ->where('sca.solicitud_id', $value->id)
+                    ->select("c.turno", "c.dias", "c.hora", "c.codcarga")
+                    ->first();
+            }
+        }
+
+        return $dbResult;
+    }
+
     public function pensum(Request $request)
     {
         $active = false;
         $enrolleds = [];
         $ciclo = '02-2021';
-
         $data = $this->jwtToken->data($request['token']);
-        
         $id = $data->usuario->id;
+        
         $carrera = $data->carrera->idcarrera;
 
         $subjects = self::subjectsToTake($data, $ciclo);
@@ -189,11 +188,18 @@ class AsesoriaController extends Controller
             $enrolleds = $this->getObjectSubjectSchules($id, $carrera, $ciclo);
         }
 
+        $sextaSolicitud     = $this->solicitudes($id, $carrera, $ciclo);
+        $otherSolicitudes   = $this->solicitudes($id, $carrera, $ciclo, "<>");
+
         return response()->json([
             "active"    => $active,
             "enrolleds" => $enrolleds,
             "pensum"    => $subjectsPensum,
             "take"      => $subjectsToTake,
+            "solicitud" => [
+                "sexta" => $sextaSolicitud,
+                "other" => $otherSolicitudes
+            ],
             "approved"  => $subjects['approved'],
             "reprobadas" => $subjects['reprobadas']
         ], 200);
