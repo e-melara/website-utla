@@ -34,11 +34,12 @@ class SolicitudController extends Controller
     public function add(Request $request)
     {
         $data = $this->jwtToken->data($request->input('token'));
-        
         $carnet      = $data->usuario->id;
         $type        = $request->input('type');
-        $subject     = $request->input('subject');
+        $object      = $request->input('object');
         $observacion = $request->input('observacion');
+        $sixthSubject= $request->input('sixthSubject');
+        $codmate = ($type === 'SEXTA') ? $sixthSubject['codmate'] : $request->input('subject');
 
         DB::beginTransaction();
         try {
@@ -46,29 +47,25 @@ class SolicitudController extends Controller
                 "estado"        => 'I',
                 "type"          => $type,
                 "carnet"        => $carnet,
+                "codmate"       => $codmate,
                 "ciclo"         => '02-2021',
                 "observacion"   => $observacion,
-                "codmate"       => $subject['codmate'],
             ]);
 
             if(strcmp($type, "SEXTA") === 0) {
-                $cargaAcademica = $subject['codcarga'];
+                $cargaAcademica = $sixthSubject['item']['codcarga'];
                 $solicitud->carga_academica()->create([
                     "codcarga"  => $cargaAcademica
                 ]);
             }
             DB::commit();
             return response()->json([
-                "resolve" => true,
-                "solicitud" => $this->geObjectById(
-                    $solicitud->id,
-                    $data->carrera->idcarrera,
-                    $type
-                )
+                "resolve" => true
             ], 200);
         } catch (\Throwable $th) {
             DB::rollback();
             return response()->json([
+                "resolve" => false,
                 "message" => "Error",
                 "t" => $th->getMessage()
             ], 402);
