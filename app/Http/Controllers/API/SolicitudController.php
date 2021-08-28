@@ -23,6 +23,34 @@ class SolicitudController extends Controller
         $this->jwtToken = new JWTToken();
     }
 
+    // select sl.id,
+    //     sl.type,
+    //     sl.ciclo,
+    //     sl.carnet,
+    //     sl.codmate,
+    //     sl.estado,
+    //     sl.created_at,
+    //     mp.nommate
+    // from solicitudes 
+    // where sl.carnet = '0102221'
+    // and sl.ciclo = '02-2021'
+    // and mp.codcarre = '01'
+
+    public function paginator(Request $request)
+    {
+        $data = $this->jwtToken->data($request->input('token'));
+        $DBResult = DB::table('solicitudes as sl')
+            ->join('materiaspensum as mp', "sl.codmate", "=", "mp.codmate")
+            ->where('sl.carnet', $data->usuario->id)
+            ->where('sl.ciclo', '02-2021')
+            ->where('mp.codcarre', $data->carrera->idcarrera)
+            ->orderBy('sl.created_at', 'desc')
+            ->select("sl.id","sl.type","sl.ciclo","sl.carnet","sl.codmate","sl.estado","sl.created_at","mp.nommate")
+        ->paginate(5);
+
+        return $DBResult;
+    }
+
     public function index(Request $request)
     {
         $data = $this->jwtToken->data($request->input('token'));

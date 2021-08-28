@@ -25,5 +25,6 @@ Route::middleware('token')->group(function() {
 
   Route::prefix('solicitud')->group(function() {
     Route::post('/add', 'API\SolicitudController@add');
+    Route::get('/', 'API\SolicitudController@paginator');
   });
 });
