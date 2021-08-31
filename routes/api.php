@@ -27,4 +27,8 @@ Route::middleware('token')->group(function() {
     Route::post('/add', 'API\SolicitudController@add');
     Route::get('/', 'API\SolicitudController@paginator');
   });
+
+  Route::prefix('eventos')->group(function() {
+    Route::resource('/', 'API\EventosController');
+  });
 });
