@@ -5,18 +5,19 @@ use App\User;
 use App\JWTToken;
 use Firebase\JWT\JWT;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
     private $jwtToken;
-    
+
     public function __construct(Type $var = null) {
         $this->jwtToken = new JWTToken();
     }
-    
+
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -32,6 +33,8 @@ class AuthController extends Controller
                 "errors"    => $validator->messages()
             ], 403);
         }
+
+        Log::info('message');
 
         $password_hash =  base64_encode(hash("sha224", $request->password));
         $user = User::where('iduser', $request->username)
@@ -53,6 +56,8 @@ class AuthController extends Controller
             "nivel"     => $user->nivel,
         ];
 
+
+
         if($user->nivel === '3') {
             $array['carrera'] = DB::table('alumnos')
                 ->join('carreras', 'alumnos.idcarrera', '=', 'carreras.idcarrera')
@@ -69,6 +74,7 @@ class AuthController extends Controller
             }
             $array['rol'] = $result;
         }
+
 
         $array['token'] = $this->jwtToken->signIn($array);
         return response()->json($array);
