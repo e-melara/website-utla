@@ -22,8 +22,7 @@ class EventosController extends Controller
         }
         $DbResult =  DB::select ($sqlQuery) ;
         return response()->json([
-            "data"  => $DbResult, 
-            "query" => $sqlQuery,
+            "data"  => $DbResult
         ]);
     }
 

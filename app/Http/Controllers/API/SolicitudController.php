@@ -22,19 +22,28 @@ class SolicitudController extends Controller
     public function __construct(Type $var = null) {
         $this->jwtToken = new JWTToken();
     }
+    
+    public function stadistic(Request $request)
+    {
+        $data = $this->jwtToken->data($request->input('token'));
+        $dbResult = DB::table("solicitudes as sl")
+            ->where('sl.carnet', $data->usuario->id)
+            ->where('sl.ciclo', '02-2021')
+            ->select(DB::raw("count(*) as total, sl.type"))
+            ->groupBy("sl.type")
+            ->get();
 
-    // select sl.id,
-    //     sl.type,
-    //     sl.ciclo,
-    //     sl.carnet,
-    //     sl.codmate,
-    //     sl.estado,
-    //     sl.created_at,
-    //     mp.nommate
-    // from solicitudes 
-    // where sl.carnet = '0102221'
-    // and sl.ciclo = '02-2021'
-    // and mp.codcarre = '01'
+        $dbResultMaterias = DB::table("solicitudes as sl")
+                ->where('sl.carnet', $data->usuario->id)
+                ->where('sl.ciclo', '02-2021')
+                ->select("sl.codmate")
+                ->get();
+
+        return response()->json([
+            "stadistic" => $dbResult,
+            "materias"  => $dbResultMaterias
+        ], 200);
+    }
 
     public function paginator(Request $request)
     {
@@ -71,6 +80,7 @@ class SolicitudController extends Controller
 
         DB::beginTransaction();
         try {
+            $curTime = new \DateTime();
             $solicitud = Solicitud::create([
                 "estado"        => 'I',
                 "type"          => $type,
@@ -78,6 +88,8 @@ class SolicitudController extends Controller
                 "codmate"       => $codmate,
                 "ciclo"         => '02-2021',
                 "observacion"   => $observacion,
+                "created_at"    => $curTime->format("Y-m-d H:i:s"),
+                "updated_at"    => $curTime->format("Y-m-d H:i:s"),
             ]);
 
             if(strcmp($type, "SEXTA") === 0) {

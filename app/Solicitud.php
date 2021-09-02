@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Solicitud extends Model
 {
-
+    public $timestamps = false;
     protected $table = 'solicitudes';
     protected $fillable = ["type", "carnet", "observacion", "codmate", "estado", "ciclo"];
 

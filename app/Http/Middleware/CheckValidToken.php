@@ -12,12 +12,10 @@ class CheckValidToken
     {
         $jwtToken = new JWTToken();
         $authorization = $request->header('Authorization');
-        $token = trim(str_replace("bearer ", "", $authorization));
         $token = trim(str_replace("Bearer ", "", $authorization));
 
         if(!$token)
             return response()->json([ "message" => "No token" ], 401);
-
         try {
             $jwtToken->check($token);
         } catch (\Throwable $t) {
