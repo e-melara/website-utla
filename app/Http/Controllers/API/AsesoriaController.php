@@ -19,7 +19,7 @@ use App\Http\Controllers\Controller;
 class AsesoriaController extends Controller
 {
     private $jwtToken;
-    
+
     public function __construct(Type $var = null) {
         $this->jwtToken = new JWTToken();
     }
@@ -66,12 +66,15 @@ class AsesoriaController extends Controller
 
         DB::beginTransaction();
         try {
+            $curTime = new \DateTime();
             $cods = $params['codCargas'];
             $enrolled = StudentEnrolled::create([
                 "observacion"   => "",
                 "estado"        => "A",
                 "carnet"        => $idUser,
                 "ciclo"         => "02-2021",
+                "created_at"    => $curTime->format("Y-m-d H:i:s"),
+                "updated_at"    => $curTime->format("Y-m-d H:i:s"),
             ]);
 
             $arrayCods = array_map(function($item){
@@ -104,7 +107,7 @@ class AsesoriaController extends Controller
             ->select("id", "ciclo", "carnet", "estado", "observacion")
             ->first();
 
-            
+
         $subjectEnrolled = DB::table('student_enrolled_subjects as ses')
             ->join('cargaacademica as c',  "ses.codcarga", "=", "c.codcarga")
             ->join('materiaspensum as m',  "c.codmate", "=", "m.codmate")
@@ -165,7 +168,7 @@ class AsesoriaController extends Controller
         $ciclo = '02-2021';
         $data = $this->jwtToken->data($request['token']);
         $id = $data->usuario->id;
-        
+
         $carrera = $data->carrera->idcarrera;
 
         $subjects = self::subjectsToTake($data, $ciclo);
@@ -188,18 +191,11 @@ class AsesoriaController extends Controller
             $enrolleds = $this->getObjectSubjectSchules($id, $carrera, $ciclo);
         }
 
-        $sextaSolicitud     = $this->solicitudes($id, $carrera, $ciclo);
-        $otherSolicitudes   = $this->solicitudes($id, $carrera, $ciclo, "<>");
-
         return response()->json([
             "active"    => $active,
             "enrolleds" => $enrolleds,
             "pensum"    => $subjectsPensum,
             "take"      => $subjectsToTake,
-            "solicitud" => [
-                "sexta" => $sextaSolicitud,
-                "other" => $otherSolicitudes
-            ],
             "approved"  => $subjects['approved'],
             "reprobadas" => $subjects['reprobadas']
         ], 200);
@@ -302,7 +298,7 @@ class AsesoriaController extends Controller
         $array_actuales = array();
         $ganadas = self::convertToArray($ganadas);
         $pendientes = self::convertToArray($pendientes);
-        
+
         $codigoSubject = array_map(function($item){ return $item['materia'];  }, $ganadas);
         $numPensum = array_map(function($item){ return $item['nopensum'];  }, $ganadas);
 

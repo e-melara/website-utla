@@ -32,4 +32,12 @@ Route::middleware('token')->group(function() {
   Route::prefix('eventos')->group(function() {
     Route::resource('/', 'API\EventosController');
   });
+
+  // Routes for administrador
+  Route::prefix('admin')->group(function() {
+    Route::prefix('/asesoria')->group(function() {
+      Route::get('/', 'API\Admin\AsesoriaAdminController@all');
+      Route::get('/{id}', 'API\Admin\AsesoriaAdminController@getById');
+    });
+  });
 });
