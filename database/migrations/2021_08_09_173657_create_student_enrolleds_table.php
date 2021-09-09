@@ -18,7 +18,7 @@ class CreateStudentEnrolledsTable extends Migration
             $table->string('ciclo', 10);
             $table->string('carnet', 15);
             $table->mediumText('observacion');
-            $table->enum('estado', ['A', 'V', 'F', 'I']);
+            $table->enum('estado', ['A', 'V', 'F', 'I', 'P']);
             $table->timestamps();
         });
     }

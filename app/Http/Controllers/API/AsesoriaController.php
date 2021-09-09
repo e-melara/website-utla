@@ -79,7 +79,7 @@ class AsesoriaController extends Controller
 
             $arrayCods = array_map(function($item){
                 return new StudentEnrolledSubjects([
-                    "estado"    => "D",
+                    "estado"    => "I",
                     "codcarga"  => $item,
                 ]);
             }, $cods);

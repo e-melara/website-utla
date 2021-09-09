@@ -38,6 +38,7 @@ Route::middleware('token')->group(function() {
     Route::prefix('/asesoria')->group(function() {
       Route::get('/', 'API\Admin\AsesoriaAdminController@all');
       Route::get('/{id}', 'API\Admin\AsesoriaAdminController@getById');
+      Route::post('/', 'API\Admin\AsesoriaAdminController@changeStatus');
     });
   });
 });

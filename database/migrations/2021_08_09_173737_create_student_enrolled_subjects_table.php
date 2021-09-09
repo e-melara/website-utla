@@ -18,7 +18,6 @@ class CreateStudentEnrolledSubjectsTable extends Migration
             $table->integer('codcarga');
             $table->unsignedBigInteger('student_enrolled_id');
             $table->enum('estado', ['I', 'A', 'D'])->default('I');
-            
             $table->foreign('student_enrolled_id')->references('id')->on('student_enrolleds');
         });
     }
