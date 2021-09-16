@@ -1,2 +1,5 @@
 public/
 vendor/
+resources/
+storage/
+tests/

@@ -11,190 +11,185 @@ use App\StudentEnrolledSubjects;
 
 class AsesoriaAdminController extends Controller
 {
-    private $jwtToken;
+  private $jwtToken;
 
-    public function __construct() {
-        $this->jwtToken = new JWTToken();
+  public function __construct()
+  {
+    $this->jwtToken = new JWTToken();
+  }
+  public function changeStatus(Request $request)
+  {
+    DB::beginTransaction();
+    try {
+      $id = $request->input('id');
+      $type = $request->input('type');
+      $data = $request->input('data');
+
+      StudentEnrolledSubjects::where('student_enrolled_id', $id)->update([
+        'estado' => 'D',
+      ]);
+
+      StudentEnrolledSubjects::whereIn('id', $data)->update([
+        'estado' => 'A',
+      ]);
+      StudentEnrolled::find($id)->update([
+        'estado' => $type === 'ACEPTADA' ? 'V' : 'P',
+      ]);
+      DB::commit();
+      return response()->json([
+        'validated' => true,
+      ]);
+    } catch (\Throwable $th) {
+      DB::rollBack();
+      return response()->json([
+        'validated' => false,
+        't' => $th->getMessage(),
+      ]);
     }
-    public function changeStatus(Request $request)
-    {
-        DB::beginTransaction();
-        try {
-            $id = $request->input("id");
-            $type = $request->input("type");
-            $data = $request->input("data");
+  }
 
-            StudentEnrolledSubjects::where("student_enrolled_id", $id)->update([
-                "estado" => "D",
-            ]);
+  public function all(Request $request)
+  {
+    $status = $request->input('estado');
+    $search = trim($request->input('search'));
 
-            StudentEnrolledSubjects::whereIn("id", $data)->update([
-                "estado" => "A",
-            ]);
-            StudentEnrolled::find($id)->update([
-                "estado" => $type === "ACEPTADA" ? "V" : "P",
-            ]);
-            DB::commit();
-            return response()->json([
-                "validated" => true,
-            ]);
-        } catch (\Throwable $th) {
-            DB::rollBack();
-            return response()->json([
-                "validated" => false,
-                "t" => $th->getMessage(),
-            ]);
-        }
-    }
+    $dbResult = DB::table('student_enrolleds as se')
+      ->join('alumnos as al', 'al.carnet', '=', 'se.carnet')
+      ->join('carreras as cr', 'cr.idcarrera', '=', 'al.idcarrera')
+      ->where('se.ciclo', '02-2021');
 
-    public function all(Request $request)
-    {
-        $status = $request->input("estado");
-        $search = trim($request->input("search"));
-
-        $dbResult = DB::table("student_enrolleds as se")
-            ->join("alumnos as al", "al.carnet", "=", "se.carnet")
-            ->join("carreras as cr", "cr.idcarrera", "=", "al.idcarrera")
-            ->where("se.ciclo", "02-2021");
-
-        if (strcmp($search, "") !== 0) {
-            $dbResult
-                ->where("se.carnet", "like", "%$search%")
-                ->orWhere("al.apellidos", "like", "%$search%")
-                ->orWhere("al.nombres", "like", "%$search%");
-        } else {
-            $dbResult->where("se.estado", $status);
-        }
-
-        $dbResult = $dbResult
-            ->orderBy("se.created_at", "DESC")
-            ->select(
-                "se.id",
-                "se.carnet",
-                "se.created_at",
-                "al.apellidos",
-                "al.nombres",
-                "cr.nomcarrera",
-                "se.estado"
-            )
-            ->paginate(10);
-
-        return response()->json($dbResult);
+    if (strcmp($search, '') !== 0) {
+      $dbResult
+        ->where('se.carnet', 'like', "%$search%")
+        ->orWhere('al.apellidos', 'like', "%$search%")
+        ->orWhere('al.nombres', 'like', "%$search%");
+    } else {
+      $dbResult->where('se.estado', $status);
     }
 
-    public function getById(Request $request, $id)
-    {
-        $enrolled = StudentEnrolled::with("schules")->find($id);
+    $dbResult = $dbResult
+      ->orderBy('se.created_at', 'DESC')
+      ->select(
+        'se.id',
+        'se.carnet',
+        'se.created_at',
+        'al.apellidos',
+        'al.nombres',
+        'cr.nomcarrera',
+        'se.estado'
+      )
+      ->paginate(10);
 
-        if ($enrolled) {
-            $carnet = $enrolled->carnet;
-            $this->getSubjectEquivalate($enrolled, $carnet);
-            return response()->json([
-                "enrolled" => $enrolled,
-            ]);
-        }
+    return response()->json($dbResult);
+  }
 
-        return response()->json(
-            [
-                "message" => "Solicitud no encontrada",
-            ],
-            404
+  public function getById(Request $request, $id)
+  {
+    $enrolled = StudentEnrolled::with('schules')->find($id);
+
+    if ($enrolled) {
+      $carnet = $enrolled->carnet;
+      $this->getSubjectEquivalate($enrolled, $carnet);
+      return response()->json([
+        'enrolled' => $enrolled,
+      ]);
+    }
+
+    return response()->json(
+      [
+        'message' => 'Solicitud no encontrada',
+      ],
+      404
+    );
+  }
+
+  public function aranceles(Request $request)
+  {
+    try {
+      $tokenData = $this->jwtToken->data($request['token']);
+      $carnet = $tokenData->usuario->id;
+      $student = DB::table('alumnos as al')
+        ->join('carreras as c', 'al.idcarrera', '=', 'c.idcarrera')
+        ->where('al.carnet', $carnet)
+        ->select('c.codigo', 'al.cuota')
+        ->first();
+
+      $codigo = $student->codigo;
+      $codigoCuota = $codigo . '0101';
+      $codigoAranceles = $codigo . '0201%';
+
+      $aranceles = DB::table('aranceles as ara')
+        ->where('idarancel', 'like', $codigoAranceles)
+        ->where('idpadre', '<>', 0)
+        ->Orwhere('idarancel', $codigoCuota)
+        ->select('ara.idarancel', 'ara.precio', 'ara.descripcion')
+        ->get();
+
+      return response()->json([
+        'resolve' => true,
+        'data' => [
+          'student' => $student,
+          'aranceles' => $aranceles,
+        ],
+      ]);
+    } catch (\Throwable $th) {
+      return response()->json([
+        'resolve' => false,
+        't' => $th->getMessage(),
+      ]);
+    }
+  }
+
+  private function getSubjectEquivalate($enrolled, $carnet)
+  {
+    $cargas = $enrolled->schules;
+    $student = DB::table('alumnos as al')
+      ->where('al.carnet', $carnet)
+      ->select('al.idcarrera')
+      ->first();
+
+    foreach ($cargas as $key => $value) {
+      $subject = DB::table('cargaacademica as cg')
+        ->join('materiaspensum as mt', 'cg.codmate', '=', 'mt.codmate')
+        ->where('cg.codcarga', $value->codcarga)
+        ->where('mt.codcarre', $student->idcarrera)
+        ->select('cg.hora', 'cg.codmate', 'cg.dias', 'mt.nommate', 'mt.codprere')
+        ->first();
+      $subject->estado = $value->estado;
+      if ($subject->codprere !== '0') {
+        $subject->prerequisito = $this->getRequisito(
+          $subject->codprere,
+          $student->idcarrera,
+          $carnet
         );
+      }
+
+      $cargas[$key]['subjects'] = $subject;
     }
+  }
 
-    public function aranceles(Request $request)
-    {
-        try {
-            $tokenData = $this->jwtToken->data($request["token"]);
-            $carnet = $tokenData->usuario->id;
-            $student = DB::table('alumnos as al')
-                ->join('carreras as c','al.idcarrera', '=', 'c.idcarrera')
-                ->where('al.carnet', $carnet)
-                ->select('c.codigo', 'al.cuota')
-                ->first();
-
-            $codigo = $student->codigo;
-            $codigoCuota        = $codigo."0101";
-            $codigoAranceles    = $codigo."0201%";
-
-            $aranceles = DB::table('aranceles as ara')
-                ->where('idarancel', 'like', $codigoAranceles)
-                ->where('idpadre', '<>', 0)
-                ->Orwhere('idarancel', $codigoCuota)
-                ->select('ara.idarancel', 'ara.precio', 'ara.descripcion')
-                ->get();
-
-            return response()->json([
-                "resolve" => true,
-                "data" => [
-                    "student"   => $student,
-                    "aranceles" => $aranceles
-                ]
-            ]);
-        } catch (\Throwable $th) {
-            return response()->json([
-                "resolve" => false,
-                "t" => $th->getMessage()
-            ]);
-        }
+  private function getRequisito($prerequito, $carrera, $carnet)
+  {
+    if (strpos($prerequito, ',')) {
+      $aResponse = [];
+      $explode = explode($prerequito, ',');
+      foreach ($explode as $value) {
+        $aResponse[] = $this->getOneById($value, $carrera, $carnet);
+      }
+      return $aResponse;
+    } else {
+      return $this->getOneById($prerequito, $carrera, $carnet);
     }
+  }
 
-    private function getSubjectEquivalate($enrolled, $carnet)
-    {
-        $cargas = $enrolled->schules;
-        $student = DB::table("alumnos as al")
-            ->where("al.carnet", $carnet)
-            ->select("al.idcarrera")
-            ->first();
-
-        foreach ($cargas as $key => $value) {
-            $subject = DB::table("cargaacademica as cg")
-                ->join("materiaspensum as mt", "cg.codmate", "=", "mt.codmate")
-                ->where("cg.codcarga", $value->codcarga)
-                ->where("mt.codcarre", $student->idcarrera)
-                ->select(
-                    "cg.hora",
-                    "cg.codmate",
-                    "cg.dias",
-                    "mt.nommate",
-                    "mt.codprere"
-                )
-                ->first();
-            $subject->estado = $value->estado;
-            if ($subject->codprere !== "0") {
-                $subject->prerequisito = $this->getRequisito(
-                    $subject->codprere,
-                    $student->idcarrera,
-                    $carnet
-                );
-            }
-
-            $cargas[$key]["subjects"] = $subject;
-        }
-    }
-
-    private function getRequisito($prerequito, $carrera, $carnet)
-    {
-        if (strpos($prerequito, ",")) {
-            $aResponse = [];
-            $explode = explode($prerequito, ",");
-            foreach ($explode as $value) {
-                $aResponse[] = $this->getOneById($value, $carrera, $carnet);
-            }
-            return $aResponse;
-        } else {
-            return $this->getOneById($prerequito, $carrera, $carnet);
-        }
-    }
-
-    private function getOneById($requisito, $carrera, $carnet)
-    {
-        return DB::table("materiaspensum as mp")
-            ->join("cnotas as c", "mp.codmate", "=", "c.codmate")
-            ->where("c.carnet", $carnet)
-            ->where("mp.codcarre", $carrera)
-            ->where("mp.nopensum", $requisito)
-            ->select("c.promedio", "mp.codmate", "mp.nommate", "mp.nopensum")
-            ->get();
-    }
+  private function getOneById($requisito, $carrera, $carnet)
+  {
+    return DB::table('materiaspensum as mp')
+      ->join('cnotas as c', 'mp.codmate', '=', 'c.codmate')
+      ->where('c.carnet', $carnet)
+      ->where('mp.codcarre', $carrera)
+      ->where('mp.nopensum', $requisito)
+      ->select('c.promedio', 'mp.codmate', 'mp.nommate', 'mp.nopensum')
+      ->get();
+  }
 }
