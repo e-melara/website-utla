@@ -13,16 +13,19 @@ class CreatePerfilModulosTable extends Migration
      */
     public function up()
     {
-        Schema::create('perfil_modulos', function (Blueprint $table) {
+        Schema::create("perfil_modulos", function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('perfil_id');
+            $table->unsignedBigInteger("perfil_id");
 
-            $table->enum('add', ['A', 'I'])->default('I');
-            $table->enum('update', ['A', 'I'])->default('I');
-            $table->enum('delete', ['A', 'I'])->default('I');
-            $table->enum('view', ['A', 'I'])->default('A');
+            $table->enum("add", ["A", "I"])->default("I");
+            $table->enum("update", ["A", "I"])->default("I");
+            $table->enum("delete", ["A", "I"])->default("I");
+            $table->enum("view", ["A", "I"])->default("A");
 
-            $table->foreign('perfil_id')->references('id')->on('perfils');
+            $table
+                ->foreign("perfil_id")
+                ->references("id")
+                ->on("perfils");
         });
     }
 
@@ -33,6 +36,6 @@ class CreatePerfilModulosTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('perfil_modulos');
+        Schema::dropIfExists("perfil_modulos");
     }
 }

@@ -13,7 +13,7 @@ class LoginController extends Controller
      */
     public function index()
     {
-        return view('login');
+        return view("login");
     }
 
     /**
@@ -34,11 +34,10 @@ class LoginController extends Controller
      */
     public function store(Request $request)
     {
-        $rules = array(
-            "carnet"    => "required",
-            "password"  => "required|alphaNum|min:3"
-        );
-
+        $rules = [
+            "carnet" => "required",
+            "password" => "required|alphaNum|min:3",
+        ];
     }
 
     /**

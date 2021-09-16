@@ -13,11 +13,11 @@ class CreatePerfilsTable extends Migration
      */
     public function up()
     {
-        Schema::create('perfils', function (Blueprint $table) {
+        Schema::create("perfils", function (Blueprint $table) {
             $table->id();
-            $table->string('nombre');
-            $table->tinyInteger('is_admin')->default(0);
-            $table->tinyInteger('is_student')->default(0);
+            $table->string("nombre");
+            $table->tinyInteger("is_admin")->default(0);
+            $table->tinyInteger("is_student")->default(0);
         });
     }
 
@@ -28,6 +28,6 @@ class CreatePerfilsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('perfils');
+        Schema::dropIfExists("perfils");
     }
 }

@@ -13,10 +13,10 @@ class CreateBancosTable extends Migration
      */
     public function up()
     {
-        Schema::create('bancos', function (Blueprint $table) {
+        Schema::create("bancos", function (Blueprint $table) {
             $table->id();
-            $table->string('nombre', 50);
-            $table->tinyInteger('is_referido')->default(0);
+            $table->string("nombre", 50);
+            $table->tinyInteger("is_referido")->default(0);
             $table->timestamps();
         });
     }
@@ -28,6 +28,6 @@ class CreateBancosTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('bancos');
+        Schema::dropIfExists("bancos");
     }
 }

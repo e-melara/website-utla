@@ -13,13 +13,13 @@ class CreateEventosTable extends Migration
      */
     public function up()
     {
-        Schema::create('eventos', function (Blueprint $table) {
+        Schema::create("eventos", function (Blueprint $table) {
             $table->id();
-            $table->date('begin_date');
-            $table->string('title', 100);
-            $table->string('month_year', 8);
-            $table->date('end_date')->nullable();
-            $table->boolean('is_end_date')->default(true);
+            $table->date("begin_date");
+            $table->string("title", 100);
+            $table->string("month_year", 8);
+            $table->date("end_date")->nullable();
+            $table->boolean("is_end_date")->default(true);
             $table->timestamps();
         });
     }
@@ -31,6 +31,6 @@ class CreateEventosTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('eventos');
+        Schema::dropIfExists("eventos");
     }
 }

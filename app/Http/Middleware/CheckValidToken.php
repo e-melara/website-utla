@@ -11,20 +11,24 @@ class CheckValidToken
     public function handle($request, Closure $next)
     {
         $jwtToken = new JWTToken();
-        $authorization = $request->header('Authorization');
+        $authorization = $request->header("Authorization");
         $token = trim(str_replace("Bearer ", "", $authorization));
 
-        if(!$token)
-            return response()->json([ "message" => "No token" ], 401);
+        if (!$token) {
+            return response()->json(["message" => "No token"], 401);
+        }
         try {
             $jwtToken->check($token);
         } catch (\Throwable $t) {
-            return response()->json([ 
-                "message" => "Token invalido"
-            ], 401);
+            return response()->json(
+                [
+                    "message" => "Token invalido",
+                ],
+                401
+            );
         }
 
-        $request['token'] = $token;
+        $request["token"] = $token;
         return $next($request);
     }
 }

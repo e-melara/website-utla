@@ -13,12 +13,12 @@ class CreateStudentEnrolledsTable extends Migration
      */
     public function up()
     {
-        Schema::create('student_enrolleds', function (Blueprint $table) {
+        Schema::create("student_enrolleds", function (Blueprint $table) {
             $table->id();
-            $table->string('ciclo', 10);
-            $table->string('carnet', 15);
-            $table->mediumText('observacion');
-            $table->enum('estado', ['A', 'V', 'F', 'I', 'P']);
+            $table->string("ciclo", 10);
+            $table->string("carnet", 15);
+            $table->mediumText("observacion");
+            $table->enum("estado", ["A", "V", "F", "I", "P"]);
             $table->timestamps();
         });
     }
@@ -30,6 +30,6 @@ class CreateStudentEnrolledsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('student_enrolleds');
+        Schema::dropIfExists("student_enrolleds");
     }
 }

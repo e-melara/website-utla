@@ -13,13 +13,15 @@ class CreateUsuarioPerfilsTable extends Migration
      */
     public function up()
     {
-        Schema::create('usuario_perfils', function (Blueprint $table) {
+        Schema::create("usuario_perfils", function (Blueprint $table) {
             $table->id();
-            $table->string('usuario_id', 15);
-            $table->unsignedBigInteger('perfil_id');
-            
+            $table->string("usuario_id", 15);
+            $table->unsignedBigInteger("perfil_id");
 
-            $table->foreign('perfil_id')->references('id')->on('perfils');
+            $table
+                ->foreign("perfil_id")
+                ->references("id")
+                ->on("perfils");
         });
     }
 
@@ -30,6 +32,6 @@ class CreateUsuarioPerfilsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('usuario_perfils');
+        Schema::dropIfExists("usuario_perfils");
     }
 }

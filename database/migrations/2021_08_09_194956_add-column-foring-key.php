@@ -13,9 +13,12 @@ class AddColumnForingKey extends Migration
      */
     public function up()
     {
-        Schema::table('perfil_modulos', function (Blueprint $table) {
-            $table->unsignedBigInteger('modulo_id');
-            $table->foreign('modulo_id')->references('id')->on('modulos');
+        Schema::table("perfil_modulos", function (Blueprint $table) {
+            $table->unsignedBigInteger("modulo_id");
+            $table
+                ->foreign("modulo_id")
+                ->references("id")
+                ->on("modulos");
         });
     }
 
@@ -26,7 +29,7 @@ class AddColumnForingKey extends Migration
      */
     public function down()
     {
-        Schema::table('t_perfil_modulos', function (Blueprint $table) {
+        Schema::table("t_perfil_modulos", function (Blueprint $table) {
             //
         });
     }
