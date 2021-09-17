@@ -61,7 +61,7 @@
             "@php artisan key:generate --ansi"
         ],
         "fix-cs": [
-            "prettier */**/* --write", "php-cs-fixer fix"
+            "prettier */** --write", "php-cs-fixer fix"
         ]
     }
 }

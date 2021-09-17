@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class StudentEnrolled extends Model
 {
   protected $primaryKey = 'id';
-  protected $fillable = [  "carnet", "ciclo", "observacion","estado"];
+  protected $fillable = ['carnet', 'ciclo', 'observacion', 'estado'];
 
   public function schules()
   {

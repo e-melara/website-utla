@@ -5,9 +5,14 @@ namespace App\Http\Controllers\API\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+
 use App\JWTToken;
 use App\StudentEnrolled;
 use App\StudentEnrolledSubjects;
+
+// Model para los pagos
+use App\Pago;
+use App\Banco;
 
 class AsesoriaAdminController extends Controller
 {
@@ -95,12 +100,9 @@ class AsesoriaAdminController extends Controller
       ]);
     }
 
-    return response()->json(
-      [
+    return response()->json([
         'message' => 'Solicitud no encontrada',
-      ],
-      404
-    );
+      ], 404);
   }
 
   public function aranceles(Request $request)
@@ -125,10 +127,13 @@ class AsesoriaAdminController extends Controller
         ->select('ara.idarancel', 'ara.precio', 'ara.descripcion')
         ->get();
 
+      $bancos = Banco::select('id as value', 'is_referido', 'nombre as title')->get();
+
       return response()->json([
         'resolve' => true,
         'data' => [
           'student' => $student,
+          'bancos'    => $bancos,
           'aranceles' => $aranceles,
         ],
       ]);
@@ -140,6 +145,89 @@ class AsesoriaAdminController extends Controller
     }
   }
 
+  /**
+   * Metodo para guardar la informacion del pago
+   * @parameter input('pago') -> la informacion del pago
+  */
+  public function pagos(Request $request)
+  {
+    // validaciones
+    $this->validate($request, [
+      "pago"      => 'required',
+      "aranceles" => 'required',
+      "files"     => 'required',
+      "files.*"   => 'mimes:pdf,jpg,png'
+    ]);
+
+    $carnet = $this->jwtToken->getId($request['token']);
+    $asesoria = StudentEnrolled::where('carnet', $carnet)->first();
+
+    $pago = json_decode($request->input('pago'), true);
+    $aranceles = json_decode($request->input('aranceles'), true);
+
+    try {
+      DB::beginTransaction();
+      // guardado los datos del pago
+      $pagoDB = Pago::create([
+        "is_titular"          => 1,
+        "student_enrolled_id" => $asesoria->id,
+        "banco_id"            => $pago['banco'],
+        "monto"               => $pago['monto'],
+        "concepto"            => $pago['concepto'],
+        "nombre_titular"      => $pago['referido'],
+        "fecha_pago"          => date('Y-m-d', strtotime($pago['fechaPago'])),
+      ]);
+
+      // guardado los aranceles del pago
+      $arancelesArray = array();
+      foreach ($aranceles as $value) {
+        $arancelesArray[] = [
+          "arancel_id"    => $value['id'],
+          "precio"        => $value['precio']
+        ];
+      }
+
+      // Guardado los datos de los aranceles
+      $pagoDB->aranceles()->createMany( $arancelesArray );
+
+      // subiendos los archivos
+      $dataFiles = array();
+      if($request->hasFile('files')) {
+        $files = $request->file('files');
+        foreach ($files as $file) {
+          $extension = $file->extension();
+          $name = time().mt_rand().".".$extension;
+          $file->move(public_path().'/files/', $name);
+
+          $dataFiles[] = [
+            "url"     => $name,
+            "tipo"    => $extension
+          ];
+        }
+      }
+
+      // Guardado los datos de los archivos
+      $pagoDB->archivos()->createMany( $dataFiles );
+
+      $asesoria->estado = 'F';
+      $asesoria->save();
+
+      DB::commit();
+      return response()->json([
+        "ok"    => true,
+        "pago"  => $pagoDB->toData()
+      ]);
+    } catch (\Throwable $th) {
+      DB::rollBack();
+      return response()->json([
+        'ok'  => false,
+        "t"   => $th->getMessage(),
+        "line" => $th->getLine()
+      ], 403);
+    }
+  }
+
+  // methods private
   private function getSubjectEquivalate($enrolled, $carnet)
   {
     $cargas = $enrolled->schules;
