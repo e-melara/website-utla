@@ -3,4 +3,11 @@
 -   [x] inicar con la parte de asesoria en linea
 -   [] materias con unidades valorativas
 
-<!-- Raul Arevalo -->
+<!--
+Mostrar el ultimo sql query ejecutado
+DB::enableQueryLog();
+dd(DB::getQueryLog());
+
+para mostrar en consola
+$output = new \Symfony\Component\Console\Output\ConsoleOutput();
+ -->

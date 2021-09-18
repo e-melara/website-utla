@@ -24,6 +24,10 @@ class Pago extends Model
   {
     return $this->hasMany(PagoArchivos::class);
   }
+  public function banco()
+  {
+    return $this->belongsTo(Banco::class);
+  }
   public function toData()
   {
     return [

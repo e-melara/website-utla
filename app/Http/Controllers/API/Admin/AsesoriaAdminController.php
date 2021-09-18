@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API\Admin;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 
 use App\JWTToken;
@@ -55,7 +56,8 @@ class AsesoriaAdminController extends Controller
 
   public function all(Request $request)
   {
-    $status = $request->input('estado');
+    $type   = $request->input('type');
+    $status = trim($request->input('estado'));
     $search = trim($request->input('search'));
 
     $dbResult = DB::table('student_enrolleds as se')
@@ -63,17 +65,25 @@ class AsesoriaAdminController extends Controller
       ->join('carreras as cr', 'cr.idcarrera', '=', 'al.idcarrera')
       ->where('se.ciclo', '02-2021');
 
+    if(strcmp($status, '') === 0) {
+      if(strcmp($type, 2) === 0) {
+        $dbResult->where('se.estado', '<>', 'F');
+      }else{
+        $dbResult->whereIn('se.estado', array('V', 'F'));
+      }
+    }else {
+      $dbResult->where('se.estado', $status);
+    }
+
     if (strcmp($search, '') !== 0) {
       $dbResult
         ->where('se.carnet', 'like', "%$search%")
         ->orWhere('al.apellidos', 'like', "%$search%")
         ->orWhere('al.nombres', 'like', "%$search%");
-    } else {
-      $dbResult->where('se.estado', $status);
     }
 
     $dbResult = $dbResult
-      ->orderBy('se.created_at', 'DESC')
+      ->orderBy('se.created_at', 'ASC')
       ->select(
         'se.id',
         'se.carnet',
@@ -90,11 +100,27 @@ class AsesoriaAdminController extends Controller
 
   public function getById(Request $request, $id)
   {
+    $output = new \Symfony\Component\Console\Output\ConsoleOutput();
     $enrolled = StudentEnrolled::with('schules')->find($id);
 
     if ($enrolled) {
       $carnet = $enrolled->carnet;
       $this->getSubjectEquivalate($enrolled, $carnet);
+      if(strcmp($enrolled->estado, 'F') === 0) {
+        $pagos = Pago::where('student_enrolled_id', $id)
+            ->with('aranceles', 'archivos', 'banco')
+          ->first();
+
+        foreach ($pagos->aranceles as $value) {
+          $resolve = DB::table('aranceles')
+              ->where('idarancel', $value->arancel_id)
+              ->select('descripcion')
+            ->first();
+          $value['descripcion'] = $resolve->descripcion;
+        }
+
+        $enrolled['pago'] = $pagos;
+      }
       return response()->json([
         'enrolled' => $enrolled,
       ]);
@@ -195,10 +221,8 @@ class AsesoriaAdminController extends Controller
       if($request->hasFile('files')) {
         $files = $request->file('files');
         foreach ($files as $file) {
+          $name = $file->store('files');
           $extension = $file->extension();
-          $name = time().mt_rand().".".$extension;
-          $file->move(public_path().'/files/', $name);
-
           $dataFiles[] = [
             "url"     => $name,
             "tipo"    => $extension
@@ -208,7 +232,6 @@ class AsesoriaAdminController extends Controller
 
       // Guardado los datos de los archivos
       $pagoDB->archivos()->createMany( $dataFiles );
-
       $asesoria->estado = 'F';
       $asesoria->save();
 
