@@ -131,6 +131,47 @@ class AsesoriaAdminController extends Controller
       ], 404);
   }
 
+  public function getArancelesData($codigo = '', $cuota = 0.0, $total)
+  {
+    $array = [];
+    $priceTotal = floatval($total);
+    $arrayDefault = array($codigo.'0404', $codigo.'0101');
+    $arrayDefautlDB = DB::table('aranceles as ar')
+      ->whereIn('idarancel', $arrayDefault)
+      ->select("ar.idarancel", "ar.descripcion", "ar.precio")
+      ->get();
+
+    $arrayCuotas = DB::table('aranceles as ar')
+      ->where('idarancel', 'like', $codigo."0201%")
+      ->where('ar.idpadre', '<>', 0)
+      ->OrWhere('ar.idarancel', $codigo.'0403')
+      ->select("ar.idarancel", "ar.descripcion", "ar.precio")
+      ->orderBy('ar.idarancel')
+      ->get();
+
+    foreach ($arrayDefautlDB as $value) {
+      $array[] = [
+        "isRemove"    => 0,
+        "total"       => $total,
+        "precio"      =>
+          str_ends_with($value->idarancel, '0404') ? $value->precio * $priceTotal : $value->precio,
+        "idarancel"   => $value->idarancel,
+        "descripcion" => $value->descripcion,
+      ];
+    }
+
+    foreach ($arrayCuotas as $value) {
+      $array[] = [
+        "isRemove"    => 1,
+        "precio"      => $cuota,
+        "idarancel"   => $value->idarancel,
+        "descripcion" => $value->descripcion,
+      ];
+    }
+
+    return $array;
+  }
+
   public function aranceles(Request $request)
   {
     try {
@@ -139,20 +180,17 @@ class AsesoriaAdminController extends Controller
       $student = DB::table('alumnos as al')
         ->join('carreras as c', 'al.idcarrera', '=', 'c.idcarrera')
         ->where('al.carnet', $carnet)
-        ->select('c.codigo', 'al.cuota')
+        ->select('c.codigo', 'al.cuota', 'al.carnet')
         ->first();
 
-      $codigo = $student->codigo;
-      $codigoCuota = $codigo . '0101';
-      $codigoAranceles = $codigo . '0201%';
+      $precio = DB::table('student_enrolleds as ss')
+        ->join("student_enrolled_subjects as sss", "ss.id", "=", "sss.student_enrolled_id")
+        ->where('ss.carnet', $student->carnet)
+        ->where('sss.estado', 'A')
+        ->select(DB::raw('count(*) as total'))
+        ->first();
 
-      $aranceles = DB::table('aranceles as ara')
-        ->where('idarancel', 'like', $codigoAranceles)
-        ->where('idpadre', '<>', 0)
-        ->Orwhere('idarancel', $codigoCuota)
-        ->select('ara.idarancel', 'ara.precio', 'ara.descripcion')
-        ->get();
-
+      $aranceles = $this->getArancelesData($student->codigo, $student->cuota, $precio->total);
       $bancos = Banco::select('id as value', 'is_referido', 'nombre as title')->get();
 
       return response()->json([
