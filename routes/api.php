@@ -43,6 +43,7 @@ Route::middleware('token')->group(function () {
       Route::get('/', 'API\Admin\AsesoriaAdminController@all');
       Route::get('/{id}', 'API\Admin\AsesoriaAdminController@getById');
       Route::post('/', 'API\Admin\AsesoriaAdminController@changeStatus');
+      Route::post('/enrolled', 'API\Admin\AsesoriaAdminController@enrolled');
     });
   });
 });

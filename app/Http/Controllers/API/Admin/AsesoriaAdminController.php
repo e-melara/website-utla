@@ -4,7 +4,6 @@ namespace App\Http\Controllers\API\Admin;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 
 use App\JWTToken;
@@ -18,6 +17,9 @@ use App\Banco;
 class AsesoriaAdminController extends Controller
 {
   private $jwtToken;
+  // private $time = new \DateTime();
+  // private $timeZone = new \DateTimeZone('America/El_Salvador');
+  // $time->setTimezone($timeZone);
 
   public function __construct()
   {
@@ -31,6 +33,10 @@ class AsesoriaAdminController extends Controller
       $type = $request->input('type');
       $data = $request->input('data');
 
+      $time = new \DateTime();
+      $timeZone = new \DateTimeZone('America/El_Salvador');
+      $time->setTimezone($timeZone);
+
       StudentEnrolledSubjects::where('student_enrolled_id', $id)->update([
         'estado' => 'D',
       ]);
@@ -39,7 +45,8 @@ class AsesoriaAdminController extends Controller
         'estado' => 'A',
       ]);
       StudentEnrolled::find($id)->update([
-        'estado' => $type === 'ACEPTADA' ? 'V' : 'P',
+        'estado'      => $type === 'ACEPTADA' ? 'V' : 'P',
+        'updated_at'  => $time->format('y-m-d H:i:s')
       ]);
       DB::commit();
       return response()->json([
@@ -65,29 +72,33 @@ class AsesoriaAdminController extends Controller
       ->join('carreras as cr', 'cr.idcarrera', '=', 'al.idcarrera')
       ->where('se.ciclo', '02-2021');
 
-    if(strcmp($status, '') === 0) {
-      if(strcmp($type, 2) === 0) {
-        $dbResult->where('se.estado', '<>', 'F');
-      }else{
-        $dbResult->whereIn('se.estado', array('V', 'F'));
+    if(strcmp($search, '') === 0) {
+      if(strcmp($status, '') === 0) {
+        if(strcmp($type, 2) === 0) {
+          $dbResult->whereIn('se.estado', array('A', 'P'));
+        }else{
+          $dbResult->whereIn('se.estado', array('V', 'F'));
+        }
+      }else {
+        $dbResult->where('se.estado', $status);
       }
     }else {
-      $dbResult->where('se.estado', $status);
-    }
-
-    if (strcmp($search, '') !== 0) {
+      if(strcmp($type, 1) === 0) {
+        $dbResult->whereIn('se.estado', array('V', 'F'));
+      }
       $dbResult
         ->where('se.carnet', 'like', "%$search%")
         ->orWhere('al.apellidos', 'like', "%$search%")
         ->orWhere('al.nombres', 'like', "%$search%");
+
     }
 
     $dbResult = $dbResult
-      ->orderBy('se.created_at', 'ASC')
+      ->orderBy('se.updated_at', 'ASC')
       ->select(
         'se.id',
         'se.carnet',
-        'se.created_at',
+        'se.updated_at as created_at',
         'al.apellidos',
         'al.nombres',
         'cr.nomcarrera',
@@ -131,7 +142,7 @@ class AsesoriaAdminController extends Controller
       ], 404);
   }
 
-  public function getArancelesData($codigo = '', $cuota = 0.0, $total)
+  public function getArancelesData($codigo = '', $cuota = 0.0, $total = 0.0, $isAumento = 0)
   {
     $array = [];
     $priceTotal = floatval($total);
@@ -154,7 +165,9 @@ class AsesoriaAdminController extends Controller
         "isRemove"    => 0,
         "total"       => $total,
         "precio"      =>
-          str_ends_with($value->idarancel, '0404') ? $value->precio * $priceTotal : $value->precio,
+          str_ends_with($value->idarancel, '0404') ?
+            $value->precio * $priceTotal * ($isAumento === 1 ? 2 : 1) :
+            $value->precio + ($isAumento === 1 ? 5 : 0),
         "idarancel"   => $value->idarancel,
         "descripcion" => $value->descripcion,
       ];
@@ -190,7 +203,11 @@ class AsesoriaAdminController extends Controller
         ->select(DB::raw('count(*) as total'))
         ->first();
 
-      $aranceles = $this->getArancelesData($student->codigo, $student->cuota, $precio->total);
+      $isAumento = DB::table('configurations AS C')
+        ->select( DB::raw('IF( DATE(NOW()) > DATE(C.extra) , 1, 0) as aumento'))
+        ->first();
+
+      $aranceles = $this->getArancelesData($student->codigo, $student->cuota, $precio->total, $isAumento->aumento);
       $bancos = Banco::select('id as value', 'is_referido', 'nombre as title')->get();
 
       return response()->json([
@@ -199,6 +216,7 @@ class AsesoriaAdminController extends Controller
           'student' => $student,
           'bancos'    => $bancos,
           'aranceles' => $aranceles,
+          'mora'   => $isAumento->aumento
         ],
       ]);
     } catch (\Throwable $th) {
@@ -246,8 +264,8 @@ class AsesoriaAdminController extends Controller
       $arancelesArray = array();
       foreach ($aranceles as $value) {
         $arancelesArray[] = [
-          "arancel_id"    => $value['id'],
-          "precio"        => $value['precio']
+          "precio"        => $value['precio'],
+          "arancel_id"    => $value['idarancel'],
         ];
       }
 
@@ -288,7 +306,89 @@ class AsesoriaAdminController extends Controller
     }
   }
 
+  public function enrolled(Request $request)
+  {
+    $array = [];
+    $time = new \DateTime();
+    $timeZone = new \DateTimeZone('America/El_Salvador');
+    $time->setTimezone($timeZone);
+
+    $id = $request->input('id');
+    $nowHours = $time->format('Y-m-d H:i:s');
+
+    $enrolled = StudentEnrolled::find($id);
+    $student  = DB::table('alumnos as a')
+    ->where('a.carnet', $enrolled->carnet)
+    ->select('a.carnet', 'a.idcarrera')
+    ->first();
+    $subjects = $enrolled->schules;
+
+
+    foreach ($subjects as $value) {
+      $carga = DB::table('cargaacademica as c')
+        ->where('c.codcarga', $value->codcarga)
+        ->select("c.codcarga", "c.ciclolectivo", "c.coddoc", "c.codmate", "c.turno", "c.tipoinscri")
+        ->first();
+
+      $array[] = $this->getArrayCarga($carga, $nowHours, $student);
+    }
+
+    DB::beginTransaction();
+    try {
+      DB::table('cnotas')->insert($array);
+      $enrolled->estado = 'M';
+      $enrolled->updated_at = $nowHours;
+      $enrolled->save();
+
+      DB::commit();
+      return response()->json([
+        'id'  => $id
+      ]);
+    } catch (\Throwable $th) {
+      DB::rollBack();
+      return response()->json([
+        'ok'  => false,
+        "t"   => $th->getMessage(),
+        "line" => $th->getLine()
+      ], 403);
+    }
+  }
+
   // methods private
+
+  private function getArrayCarga($arrayCarga, $date, $student)
+  {
+    return [
+      "carnet"      => $student->carnet,
+      "idcarrera"   => $student->idcarrera,
+      "codcarga"    => $arrayCarga->codcarga,
+      "fechainscr"  => $date,
+      "fecharetiro" => $date,
+      "coddoc"      => $arrayCarga->coddoc,
+      "codmate"     => $arrayCarga->codmate,
+      "tipoinscri"  => $arrayCarga->tipoinscri,
+      "ciclolectivo"=> $arrayCarga->ciclolectivo,
+
+      "turno"       => $arrayCarga->turno,
+      "estado"      =>  "ACTIVO",
+
+      "nota1"       =>0,
+      "porcent1"    =>0,
+      "nota2"       =>0,
+      "porcent2"    =>0,
+      "nota3"       =>0,
+      "porcent3"    =>0,
+      "nota4"       =>0,
+      "porcent4"    =>0,
+      "nota5"       =>0,
+      "porcent5"    =>0,
+      "promedio"    =>0,
+
+      "documento"   =>"SOLVENTE",
+      "retirada"    =>'',
+    ];
+  }
+
   private function getSubjectEquivalate($enrolled, $carnet)
   {
     $cargas = $enrolled->schules;
