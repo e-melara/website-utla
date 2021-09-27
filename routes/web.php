@@ -15,3 +15,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', 'HomeController@index');
 // Route::resource('/login', 'LoginController');
+
+// routes for routes
+Route::get('/pdf/matriculas', 'PdfController@all');
+Route::get('/pdf/matricula/{id}', 'PdfController@matricula');
+// pago
+Route::get('/pdf/pago/{id}', 'PdfController@pago');

@@ -18,7 +18,7 @@ class Pago extends Model
 
   public function aranceles()
   {
-    return $this->hasMany(PagoAranceles::class);
+    return $this->hasMany(PagoAranceles::class)->orderBy('arancel_id');
   }
   public function archivos()
   {
