@@ -45,5 +45,11 @@ Route::middleware('token')->group(function () {
       Route::post('/', 'API\Admin\AsesoriaAdminController@changeStatus');
       Route::post('/enrolled', 'API\Admin\AsesoriaAdminController@enrolled');
     });
+
+    Route::prefix('/solicitudes')->group(function() {
+      Route::get('/', 'API\Admin\SolicitudesController@all');
+      Route::get('/{id}', 'API\Admin\SolicitudesController@findById');
+      Route::post('/', 'API\Admin\SolicitudesController@save');
+    });
   });
 });

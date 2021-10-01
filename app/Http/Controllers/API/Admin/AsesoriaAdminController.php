@@ -17,10 +17,6 @@ use App\Banco;
 class AsesoriaAdminController extends Controller
 {
   private $jwtToken;
-  // private $time = new \DateTime();
-  // private $timeZone = new \DateTimeZone('America/El_Salvador');
-  // $time->setTimezone($timeZone);
-
   public function __construct()
   {
     $this->jwtToken = new JWTToken();
@@ -76,6 +72,8 @@ class AsesoriaAdminController extends Controller
       if(strcmp($status, '') === 0) {
         if(strcmp($type, 2) === 0) {
           $dbResult->whereIn('se.estado', array('A', 'P'));
+        } else if($type === '3'){
+          $dbResult->where('se.estado', 'M');
         }else{
           $dbResult->whereIn('se.estado', array('V', 'F'));
         }
@@ -85,12 +83,13 @@ class AsesoriaAdminController extends Controller
     }else {
       if(strcmp($type, 1) === 0) {
         $dbResult->whereIn('se.estado', array('V', 'F'));
+      }else if($type === '3') {
+        $dbResult->where('se.estado', 'M');
       }
       $dbResult
         ->where('se.carnet', 'like', "%$search%")
         ->orWhere('al.apellidos', 'like', "%$search%")
         ->orWhere('al.nombres', 'like', "%$search%");
-
     }
 
     $dbResult = $dbResult

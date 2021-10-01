@@ -6,13 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Solicitud extends Model
 {
-  public $timestamps = false;
   protected $table = 'solicitudes';
   protected $fillable = ['type', 'carnet', 'observacion', 'codmate', 'estado', 'ciclo'];
 
   public function carga_academica()
   {
-    return $this->hasOne(SolicitudesCargasAcademica::class);
+    return $this->hasMany(SolicitudesCargasAcademica::class);
   }
 
   public function materia()

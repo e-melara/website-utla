@@ -2,22 +2,19 @@
 
 namespace App\Http\Controllers\API;
 
-use Firebase\JWT\JWT;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 
 use App\JWTToken;
 use App\Solicitud;
-use App\StudentEnrolled;
-use App\StudentEnrolledSubjects;
-use App\SolicitudesCargasAcademica;
 
 class SolicitudController extends Controller
 {
   private $jwtToken;
 
-  public function __construct(Type $var = null)
+  public function __construct()
   {
     $this->jwtToken = new JWTToken();
   }
@@ -87,23 +84,22 @@ class SolicitudController extends Controller
     $data = $this->jwtToken->data($request->input('token'));
     $carnet = $data->usuario->id;
     $type = $request->input('type');
-    $object = $request->input('object');
     $observacion = $request->input('observacion');
     $sixthSubject = $request->input('sixthSubject');
+    $arraySubjects = $request->input('arraySubjects');
     $codmate = $type === 'SEXTA' ? $sixthSubject['codmate'] : $request->input('subject');
 
     DB::beginTransaction();
     try {
-      $curTime = new \DateTime();
       $solicitud = Solicitud::create([
         'estado' => 'I',
         'type' => $type,
         'carnet' => $carnet,
-        'codmate' => $codmate,
         'ciclo' => '02-2021',
+        'codmate' => $codmate,
         'observacion' => $observacion,
-        'created_at' => $curTime->format('Y-m-d H:i:s'),
-        'updated_at' => $curTime->format('Y-m-d H:i:s'),
+        "created_at"  => date('Y-m-d'),
+        "updated_at"  => date('Y-m-d'),
       ]);
 
       if (strcmp($type, 'SEXTA') === 0) {
@@ -112,10 +108,20 @@ class SolicitudController extends Controller
           'codcarga' => $cargaAcademica,
         ]);
       }
+
+      if(strcmp($type, 'AGREGAR') === 0) {
+        $codes = array_map(function($item) {
+          return array(
+            "codcarga"  => $item['codcarga']
+          );
+        }, $arraySubjects);
+        $solicitud->carga_academica()->createMany($codes);
+      }
       DB::commit();
       return response()->json(
         [
           'resolve' => true,
+          "codes"   => $codes,
         ],
         200
       );
