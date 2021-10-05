@@ -63,11 +63,12 @@ class SolicitudesController extends Controller {
     {
         $type   = $request->input('type');
         $search = trim($request->input('search'));
-
+        $data = $this->jwtToken->data($request->input('token'));
+        
         $dbResult = DB::table('solicitudes as sl')
         ->join('alumnos as a', 'a.carnet', '=', 'sl.carnet')
         ->join('carreras as c', 'c.idcarrera', '=', 'a.idcarrera')
-        ->where('sl.ciclo', '02-2021')
+        ->where('sl.ciclo',  $data->ciclo)
         ->where('sl.estado', ($type === '2' ? 'I' : 'A'));
 
         if(strcmp($search, '') !== 0) {

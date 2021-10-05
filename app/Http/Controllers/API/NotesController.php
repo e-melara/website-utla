@@ -21,8 +21,9 @@ class NotesController extends Controller
 
   public function me(Request $request)
   {
-    $ciclo = '02-2021';
     $data = $this->jwtToken->data($request->input('token'));
+    $ciclo = $data->ciclo;
+
     $array = [
       'active' => false,
       'history' => [],

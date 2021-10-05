@@ -22,16 +22,17 @@ class SolicitudController extends Controller
   public function stadistic(Request $request)
   {
     $data = $this->jwtToken->data($request->input('token'));
+
     $dbResult = DB::table('solicitudes as sl')
       ->where('sl.carnet', $data->usuario->id)
-      ->where('sl.ciclo', '02-2021')
+      ->where('sl.ciclo', $data->ciclo)
       ->select(DB::raw('count(*) as total, sl.type'))
       ->groupBy('sl.type')
       ->get();
 
     $dbResultMaterias = DB::table('solicitudes as sl')
       ->where('sl.carnet', $data->usuario->id)
-      ->where('sl.ciclo', '02-2021')
+      ->where('sl.ciclo', $data->ciclo)
       ->select('sl.codmate')
       ->get();
 
@@ -50,7 +51,7 @@ class SolicitudController extends Controller
     $DBResult = DB::table('solicitudes as sl')
       ->join('materiaspensum as mp', 'sl.codmate', '=', 'mp.codmate')
       ->where('sl.carnet', $data->usuario->id)
-      ->where('sl.ciclo', '02-2021')
+      ->where('sl.ciclo', $data->ciclo)
       ->where('mp.codcarre', $data->carrera->idcarrera)
       ->orderBy('sl.created_at', 'desc')
       ->select(
@@ -73,7 +74,7 @@ class SolicitudController extends Controller
     $data = $this->jwtToken->data($request->input('token'));
     return json_encode(
       [
-        'data' => $this->getObjectData($data->usuario->id),
+        'data' => $this->getObjectData($data->usuario->id, $data->ciclo),
       ],
       200
     );
@@ -83,6 +84,7 @@ class SolicitudController extends Controller
   {
     $data = $this->jwtToken->data($request->input('token'));
     $carnet = $data->usuario->id;
+
     $type = $request->input('type');
     $observacion = $request->input('observacion');
     $sixthSubject = $request->input('sixthSubject');
@@ -95,7 +97,7 @@ class SolicitudController extends Controller
         'estado' => 'I',
         'type' => $type,
         'carnet' => $carnet,
-        'ciclo' => '02-2021',
+        'ciclo' => $data->ciclo,
         'codmate' => $codmate,
         'observacion' => $observacion,
         "created_at"  => date('Y-m-d'),
@@ -167,10 +169,10 @@ class SolicitudController extends Controller
     return $dbResult;
   }
 
-  private function getObjectData($carnet)
+  private function getObjectData($carnet, $ciclo)
   {
     $solicitud = Solicitud::where('carnet', $carnet)
-      ->where('ciclo', '02-2021')
+      ->where('ciclo', $ciclo)
       ->with('carga_academica')
       ->get();
 

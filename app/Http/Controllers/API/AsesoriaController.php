@@ -23,10 +23,11 @@ class AsesoriaController extends Controller
   }
   public function getEnrolledSubject(Request $request)
   {
-    $ciclo = '02-2021';
     $token = $request->input('token');
     $idUser = $this->jwtToken->getId($token);
     $carreraId = $this->jwtToken->getCarrera($token);
+
+    $ciclo = $this->jwtToken->ciclo;
 
     $objectEnrolled = $this->getObjectSubjectSchules($idUser, $carreraId, $ciclo);
     if (isset($objectEnrolled)) {
@@ -46,6 +47,7 @@ class AsesoriaController extends Controller
     $params = $request->all();
     $idUser = $this->jwtToken->getId($params['token']);
     $carreraId = $this->jwtToken->getCarrera($params['token']);
+    $ciclo = $this->jwtToken->ciclo($params['token']);
 
     if (!isset($params['codCargas'])) {
       return response()->json(
@@ -56,7 +58,7 @@ class AsesoriaController extends Controller
       );
     }
 
-    $find = StudentEnrolled::where('ciclo', '02-2021')
+    $find = StudentEnrolled::where('ciclo', $ciclo)
       ->where('carnet', $idUser)
       ->first();
 
@@ -77,7 +79,7 @@ class AsesoriaController extends Controller
         'observacion' => '',
         'estado' => 'A',
         'carnet' => $idUser,
-        'ciclo' => '02-2021',
+        'ciclo' => $ciclo,
         'created_at' => $curTime->format('Y-m-d H:i:s'),
         'updated_at' => $curTime->format('Y-m-d H:i:s'),
       ]);
@@ -109,7 +111,7 @@ class AsesoriaController extends Controller
     }
   }
 
-  private function getObjectSubjectSchules($carnet, $carrera, $ciclo = '02-2021')
+  private function getObjectSubjectSchules($carnet, $carrera, $ciclo)
   {
     $enrolled = DB::table('student_enrolleds')
       ->where('ciclo', $ciclo)
@@ -145,8 +147,10 @@ class AsesoriaController extends Controller
     $array = [];
     $subject = $request->input('subject');
 
+    $data = $this->jwtToken->data($request->input('token'));
+
     $schulesSubjects = DB::table('cargaacademica')
-      ->where('ciclolectivo', '02-2021')
+      ->where('ciclolectivo', $data->ciclo)
       ->where('codmate', $subject)
       ->where('tipoinscri', '1')
       ->select('turno', 'hora', 'dias', 'codcarga')
@@ -156,7 +160,7 @@ class AsesoriaController extends Controller
     return response()->json($array);
   }
 
-  private function solicitudes($carnet = '', $carrera = '01', $ciclo = '02-2021', $equal = '=')
+  private function solicitudes($carnet = '', $carrera = '01', $ciclo, $equal = '=')
   {
     $dbResult = DB::table('solicitudes AS sl')
       ->join('materiaspensum AS m', 'sl.codmate', '=', 'm.codmate')
@@ -192,14 +196,14 @@ class AsesoriaController extends Controller
   {
     $active = false;
     $enrolleds = [];
-    $ciclo = '02-2021';
     $data = $this->jwtToken->data($request['token']);
     $id = $data->usuario->id;
-
+    
+    $ciclo = $data->ciclo;
     $carrera = $data->carrera->idcarrera;
 
     $subjects = self::subjectsToTake($data, $ciclo);
-    $subjectsToTake = self::subjectSchules($subjects['take']);
+    $subjectsToTake = self::subjectSchules($subjects['take'], $ciclo);
 
     $subjectsPensum = DB::table('materiaspensum')
       ->where('codcarre', $carrera)
@@ -233,8 +237,8 @@ class AsesoriaController extends Controller
 
   public function asesoria(Request $request)
   {
-    $ciclo = '02-2021';
     $data = $this->jwtToken->data($request['token']);
+    $ciclo = $data->ciclo;
 
     $id = $data->usuario->id;
     $carrera = $data->carrera->idcarrera;
@@ -255,7 +259,7 @@ class AsesoriaController extends Controller
     }
 
     $subjects = self::subjectsToTake($data, $ciclo);
-    $subjects = self::subjectSchules($subjects['take']);
+    $subjects = self::subjectSchules($subjects['take'], $ciclo);
     return response()->json([
       'materias' => $subjects,
       'active' => false,
@@ -263,7 +267,7 @@ class AsesoriaController extends Controller
   }
 
   // Materias que puede llevar
-  private function subjectsToTake($data, $ciclo = '02-2021')
+  private function subjectsToTake($data, $ciclo)
   {
     $id = $data->usuario->id;
     $carrera = $data->carrera->idcarrera;
@@ -310,11 +314,11 @@ class AsesoriaController extends Controller
     ];
   }
 
-  public function subjectSchules($subjects = [])
+  public function subjectSchules($subjects = [], $ciclo)
   {
     foreach ($subjects as $key => $value) {
       $schulesSubjects = DB::table('cargaacademica')
-        ->where('ciclolectivo', '02-2021')
+        ->where('ciclolectivo', $ciclo)
         ->where('codmate', $value['materia'])
         ->where('tipoinscri', '1')
         ->select('turno', 'hora', 'dias', 'codcarga')

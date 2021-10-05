@@ -30,6 +30,11 @@ class JWTToken
     return $this->data($token)->carrera->idcarrera;
   }
 
+  public function ciclo($token)
+  {
+    return $this->data($token)->ciclo;
+  }
+
   public function check($token)
   {
     if (empty($token)) {

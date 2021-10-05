@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Storage;
 
 use App\JWTToken;
 use App\StudentEnrolled;
@@ -63,10 +64,12 @@ class AsesoriaAdminController extends Controller
     $status = trim($request->input('estado'));
     $search = trim($request->input('search'));
 
+    $data = $this->jwtToken->data($request->input('token'));
+
     $dbResult = DB::table('student_enrolleds as se')
       ->join('alumnos as al', 'al.carnet', '=', 'se.carnet')
       ->join('carreras as cr', 'cr.idcarrera', '=', 'al.idcarrera')
-      ->where('se.ciclo', '02-2021');
+      ->where('se.ciclo', $data->ciclo);
 
     if(strcmp($search, '') === 0) {
       if(strcmp($status, '') === 0) {
@@ -81,15 +84,18 @@ class AsesoriaAdminController extends Controller
         $dbResult->where('se.estado', $status);
       }
     }else {
-      if(strcmp($type, 1) === 0) {
-        $dbResult->whereIn('se.estado', array('V', 'F'));
-      }else if($type === '3') {
-        $dbResult->where('se.estado', 'M');
-      }
       $dbResult
         ->where('se.carnet', 'like', "%$search%")
         ->orWhere('al.apellidos', 'like', "%$search%")
         ->orWhere('al.nombres', 'like', "%$search%");
+
+      if(strcmp($type, 1) === 0) {
+        $dbResult->whereIn('se.estado', array('V', 'F'));
+      }
+      
+      if(strcmp($type, 3) === 0) {
+        $dbResult->where('se.estado', 'M');
+      }
     }
 
     $dbResult = $dbResult
@@ -103,15 +109,14 @@ class AsesoriaAdminController extends Controller
         'cr.nomcarrera',
         'se.estado'
       )
-      ->paginate(10);
-
+      ->paginate(5);
     return response()->json($dbResult);
   }
 
   public function getById(Request $request, $id)
   {
-    $output = new \Symfony\Component\Console\Output\ConsoleOutput();
     $enrolled = StudentEnrolled::with('schules')->find($id);
+    $files = [];
 
     if ($enrolled) {
       $carnet = $enrolled->carnet;
@@ -129,6 +134,9 @@ class AsesoriaAdminController extends Controller
           $value['descripcion'] = $resolve->descripcion;
         }
 
+        foreach ($pagos->archivos as $value) {
+         $value->fileUrl = Storage::url($value->url);
+        }
         $enrolled['pago'] = $pagos;
       }
       return response()->json([
@@ -166,7 +174,7 @@ class AsesoriaAdminController extends Controller
         "precio"      =>
           str_ends_with($value->idarancel, '0404') ?
             $value->precio * $priceTotal * ($isAumento === 1 ? 2 : 1) :
-            $value->precio + ($isAumento === 1 ? 5 : 0),
+            $value->precio,
         "idarancel"   => $value->idarancel,
         "descripcion" => $value->descripcion,
       ];
@@ -189,6 +197,23 @@ class AsesoriaAdminController extends Controller
     try {
       $tokenData = $this->jwtToken->data($request['token']);
       $carnet = $tokenData->usuario->id;
+
+      $result = DB::table('student_enrolleds')
+        ->where('carnet', $carnet)
+        ->select('estado')
+        ->first();
+
+      if(strcmp($result->estado, 'F') === 0) {
+        return response()->json([
+          'resolve' => false,
+          'exist'   => true,
+          'data' => [
+            'bancos'    => [],
+            'aranceles' => [],
+          ],
+        ]);
+      }
+
       $student = DB::table('alumnos as al')
         ->join('carreras as c', 'al.idcarrera', '=', 'c.idcarrera')
         ->where('al.carnet', $carnet)
@@ -211,6 +236,7 @@ class AsesoriaAdminController extends Controller
 
       return response()->json([
         'resolve' => true,
+        'exist'   => false,
         'data' => [
           'student' => $student,
           'bancos'    => $bancos,
@@ -231,7 +257,7 @@ class AsesoriaAdminController extends Controller
    * @parameter input('pago') -> la informacion del pago
   */
   public function pagos(Request $request)
-  {
+  {    
     // validaciones
     $this->validate($request, [
       "pago"      => 'required',
@@ -240,7 +266,9 @@ class AsesoriaAdminController extends Controller
       "files.*"   => 'mimes:pdf,jpg,png'
     ]);
 
+    $ciclo = $this->jwtToken->ciclo($request['token']);
     $carnet = $this->jwtToken->getId($request['token']);
+
     $asesoria = StudentEnrolled::where('carnet', $carnet)->first();
 
     $pago = json_decode($request->input('pago'), true);
@@ -276,7 +304,7 @@ class AsesoriaAdminController extends Controller
       if($request->hasFile('files')) {
         $files = $request->file('files');
         foreach ($files as $file) {
-          $name = $file->store('files');
+          $name = $file->store("pagos/$ciclo", options: 'spaces');
           $extension = $file->extension();
           $dataFiles[] = [
             "url"     => $name,

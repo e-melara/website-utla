@@ -6,7 +6,6 @@ use App\JWTToken;
 use Firebase\JWT\JWT;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
 
@@ -41,8 +40,6 @@ class AuthController extends Controller
         403
       );
     }
-
-    Log::info('message');
 
     $password_hash = base64_encode(hash('sha224', $request->password));
     $user = User::where('iduser', $request->username)
@@ -86,7 +83,14 @@ class AuthController extends Controller
       }
       $array['rol'] = $result;
     }
+    
+    $ciclo = DB::table('periodo')
+      ->where('estado', 'A')
+      ->select('ciclo')
+      ->orderBy('ciclo', 'DESC')
+      ->first();
 
+    $array['ciclo'] = $ciclo->ciclo;
     $array['token'] = $this->jwtToken->signIn($array);
     return response()->json($array);
   }
