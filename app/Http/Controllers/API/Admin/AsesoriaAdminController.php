@@ -304,7 +304,7 @@ class AsesoriaAdminController extends Controller
       if($request->hasFile('files')) {
         $files = $request->file('files');
         foreach ($files as $file) {
-          $name = $file->store("pagos/$ciclo", options: 'spaces');
+          $name = $file->store("pagos/$ciclo", 'spaces');
           $extension = $file->extension();
           $dataFiles[] = [
             "url"     => $name,

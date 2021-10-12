@@ -51,5 +51,11 @@ Route::middleware('token')->group(function () {
       Route::get('/{id}', 'API\Admin\SolicitudesController@findById');
       Route::post('/', 'API\Admin\SolicitudesController@save');
     });
+
+    // users
+    // route: admin/users/*.*
+    Route::prefix('/users')->group(function() {
+      Route::get('/all', 'API\Admin\UsersController@all');
+    });
   });
 });
