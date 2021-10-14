@@ -56,6 +56,14 @@ Route::middleware('token')->group(function () {
     // route: admin/users/*.*
     Route::prefix('/users')->group(function() {
       Route::get('/all', 'API\Admin\UsersController@all');
+      Route::post('/perfil', 'API\Admin\UsersController@perfil');
+      Route::post('/new-user', 'API\Admin\UsersController@save');
+      Route::post('/password', 'API\Admin\UsersController@password');
+      Route::post('/darbaja', 'API\Admin\UsersController@darBajarUser');
+      Route::post('/name-last', 'API\Admin\UsersController@nameLastChange');
+
+      // validate user
+      Route::post('/validate-user', 'API\Admin\UsersController@validateUsername');
     });
   });
 });

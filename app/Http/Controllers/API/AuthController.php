@@ -114,6 +114,7 @@ class AuthController extends Controller
       $DBPerfilRolAdmin = DB::table('usuario_perfils as up')
         ->join('perfils as p', 'p.id', '=', 'up.perfil_id')
         ->where('up.usuario_id', $idUser)
+        ->where('up.estado', 1)
         ->select('p.nombre', 'p.id')
         ->first();
 
