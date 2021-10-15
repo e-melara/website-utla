@@ -160,7 +160,7 @@ class AsesoriaController extends Controller
     return response()->json($array);
   }
 
-  private function solicitudes($carnet = '', $carrera = '01', $ciclo, $equal = '=')
+  private function solicitudes($carnet = '', $carrera = '01', $ciclo = '02-2021', $equal = '=')
   {
     $dbResult = DB::table('solicitudes AS sl')
       ->join('materiaspensum AS m', 'sl.codmate', '=', 'm.codmate')
@@ -314,7 +314,7 @@ class AsesoriaController extends Controller
     ];
   }
 
-  public function subjectSchules($subjects = [], $ciclo)
+  public function subjectSchules($subjects = [], $ciclo = '02-2021')
   {
     foreach ($subjects as $key => $value) {
       $schulesSubjects = DB::table('cargaacademica')

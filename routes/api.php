@@ -37,6 +37,10 @@ Route::middleware('token')->group(function () {
     Route::resource('/', 'API\EventosController');
   });
 
+
+  Route::get('/config', 'API\Admin\AsesoriaAdminController@configuracion');
+  Route::post('/config', 'API\Admin\AsesoriaAdminController@configuracionSave');
+
   // Routes for administrador
   Route::prefix('admin')->group(function () {
     Route::prefix('/asesoria')->group(function () {
@@ -50,6 +54,17 @@ Route::middleware('token')->group(function () {
       Route::get('/', 'API\Admin\SolicitudesController@all');
       Route::get('/{id}', 'API\Admin\SolicitudesController@findById');
       Route::post('/', 'API\Admin\SolicitudesController@save');
+    });
+
+    // perfiles
+    Route::prefix('/perfiles')->group(function() {
+      Route::get('/', 'API\Admin\PerfilesController@all');
+      
+      Route::post('/add', 'API\Admin\PerfilesController@add');
+      Route::get('/{id}', 'API\Admin\PerfilesController@findById');
+      Route::post('/new-perfil', 'API\Admin\PerfilesController@newPerfil');
+      Route::post('/update-perfil', 'API\Admin\PerfilesController@updatePerfil');
+      Route::post('/delete-modulo', 'API\Admin\PerfilesController@eliminarModulo');
     });
 
     // users

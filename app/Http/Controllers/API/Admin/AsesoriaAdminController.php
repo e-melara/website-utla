@@ -14,6 +14,7 @@ use App\StudentEnrolledSubjects;
 // Model para los pagos
 use App\Pago;
 use App\Banco;
+use App\Configuration;
 
 class AsesoriaAdminController extends Controller
 {
@@ -379,6 +380,30 @@ class AsesoriaAdminController extends Controller
         "line" => $th->getLine()
       ], 403);
     }
+  }
+
+  public function configuracion(Request $request)
+  {
+    return response()->json([
+      "data"  => Configuration::where('id', 1)->first()
+    ]);
+  }
+
+  public function configuracionSave(Request $request)
+  {
+    $fecha = $request->input('fecha');
+    $asesoria = $request->input('asesoria');
+
+    Configuration::where('id', 1)
+      ->update([
+        "valor" => $asesoria,
+        "extra" => $fecha
+      ]);
+
+    return response()->json([
+      'ok'  => true,
+      'object'  => Configuration::where('id', 1)->first()
+    ]);
   }
 
   // methods private
