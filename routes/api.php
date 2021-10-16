@@ -61,10 +61,11 @@ Route::middleware('token')->group(function () {
       Route::get('/', 'API\Admin\PerfilesController@all');
       
       Route::post('/add', 'API\Admin\PerfilesController@add');
-      Route::get('/{id}', 'API\Admin\PerfilesController@findById');
       Route::post('/new-perfil', 'API\Admin\PerfilesController@newPerfil');
       Route::post('/update-perfil', 'API\Admin\PerfilesController@updatePerfil');
+      Route::post('/delete-perfil', 'API\Admin\PerfilesController@deletePerfil');
       Route::post('/delete-modulo', 'API\Admin\PerfilesController@eliminarModulo');
+      Route::get('/{id}', 'API\Admin\PerfilesController@findById');
     });
 
     // users

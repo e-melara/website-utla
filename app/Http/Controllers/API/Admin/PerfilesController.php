@@ -171,4 +171,24 @@ class PerfilesController extends Controller
             "ok"    => false,
         ], 405);
     }
+
+    public function deletePerfil(Request $request)
+    {
+        $id = $request->input('id');
+        try {
+            DB::table('perfils')
+            ->where('id', $id)
+            ->delete();
+            return response()->json([
+                "id"    => $id
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                "ok"        => false,
+                'line'      => $th->getLine(),
+                'msg'       => $th->getMessage(),
+            ], 406);
+        }
+        
+    }
 }
