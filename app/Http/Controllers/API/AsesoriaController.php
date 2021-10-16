@@ -6,6 +6,7 @@ use App\Alumno;
 use App\JWTToken;
 
 use App\Solicitud;
+use App\Configuration;
 use App\StudentEnrolled;
 use App\StudentEnrolledSubjects;
 
@@ -202,6 +203,22 @@ class AsesoriaController extends Controller
     $ciclo = $data->ciclo;
     $carrera = $data->carrera->idcarrera;
 
+    $configuration = Configuration::where('id', 1)->first();
+
+    // if($configuration->valor === '0') {
+    //   return response()->json(
+    //     [
+    //       'take' => [],
+    //       'pensum' => [],
+    //       'approved' => [],
+    //       'work'  => false,
+    //       'active' => false,
+    //       'enrolleds' => [],
+    //       'reprobadas' => [],
+    //     ], 200
+    //   );
+    // }
+
     $subjects = self::subjectsToTake($data, $ciclo);
     $subjectsToTake = self::subjectSchules($subjects['take'], $ciclo);
 
@@ -226,9 +243,10 @@ class AsesoriaController extends Controller
       [
         'active' => $active,
         'enrolleds' => $enrolleds,
-        'pensum' => $subjectsPensum,
         'take' => $subjectsToTake,
+        'pensum' => $subjectsPensum,
         'approved' => $subjects['approved'],
+        'work'  => $configuration->valor === '1',
         'reprobadas' => $subjects['reprobadas'],
       ],
       200
